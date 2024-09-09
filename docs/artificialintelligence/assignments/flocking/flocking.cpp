@@ -113,10 +113,10 @@ struct Cohesion {
 
   Vector2 ComputeForce(const vector<Boid>& boids, int boidAgentIndex) {
     Vector2 result;
-    size_t neighbourSize = 0;
+    double neighbourSize = 0;
 
     for (size_t i = 0; i < boids.size(); i++) {
-        if ((boids[boidAgentIndex].position - boids[i].position).getMagnitude() <= radius) 
+        if (i != boidAgentIndex && (boids[boidAgentIndex].position - boids[i].position).getMagnitude() <= radius) 
         {
             result += boids[i].position;
             neighbourSize++;
@@ -126,9 +126,8 @@ struct Cohesion {
     {
         result /= neighbourSize;
         result -= boids[boidAgentIndex].position;
+        return result.normalized() * k;
     }
-
-    return result.normalized() * k;
   }
 };
 
@@ -140,10 +139,10 @@ struct Alignment {
 
   Vector2 ComputeForce(const vector<Boid>& boids, int boidAgentIndex) { 
     Vector2 result;
-    size_t neighbourSize = 0;
+    double neighbourSize = 0;
 
-    for (size_t i = 0; i < boids.size(); i++) {
-        if ((boids[boidAgentIndex].position - boids[i].position).getMagnitude() <= radius)
+    for (int i = 0; i < boids.size(); i++) {
+        if (i != boidAgentIndex && (boids[boidAgentIndex].position - boids[i].position).getMagnitude() <= radius)
         {
             result += boids[i].velocity;
             neighbourSize++;
@@ -151,9 +150,8 @@ struct Alignment {
     }
     if (neighbourSize > 0) {
         result /= neighbourSize;
+        return result.normalized() * k;
     }
-
-    return result.normalized() * k; 
   }
 };
 
@@ -167,25 +165,25 @@ struct Separation {
   Vector2 ComputeForce(const vector<Boid>& boids, int boidAgentIndex) 
   {
     Vector2 result;
-    size_t neighbourSize = 0;
+    //size_t neighbourSize = 0;
 
     for (size_t i = 0; i < boids.size(); i++) {
-        if ((boids[boidAgentIndex].position - boids[i].position).getMagnitude() <= radius) {
-        Vector2;
-            result += boids[i].position;
-            neighbourSize++;
+        if (i != boidAgentIndex)
+        {
+            Vector2 difference = boids[boidAgentIndex].position - boids[i].position;
+            double dist = difference.getMagnitude();
+            if (dist > 0 && dist < radius)
+            {
+                result += difference.normalized() * ((radius / 2) * difference.getMagnitude());
+            }
         }
-    }
-    if (neighbourSize > 0) 
-    {
-
     }
     if (result.getMagnitude() > maxForce)
     {
-        result.normalized() * maxForce;
+        result = result.normalized() * maxForce;
     }
 
-    return result.normalized() * k; 
+    return result.normalized() * k;
   }
 };
 
@@ -208,7 +206,7 @@ int main() {
     currentState.push_back(b);
     newState.push_back(b);
   }
-  cin.ignore(256, '\n');
+  cin.ignore();
   // Final input reading and processing
   // todo: edit this. probably my code will be different than yours.
   while (getline(cin, line)) {  // game loop
