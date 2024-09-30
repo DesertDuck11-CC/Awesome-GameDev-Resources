@@ -1,192 +1,189 @@
 #include <iostream>
-#include <stack>
 #include <vector>
+#include <stack>
 using namespace std;
 
-struct Cell {
-    Cell(int x, int y) 
-    {
-        this->x = x;
-        this->y = y;
+struct Node
+{
+  Node(int x, int y)
+  {
+    X = x;
+    Y = y;
 
-        up = true;
-        left = true;
-    }
+    Walls.first = true;
+    Walls.second = true;
+  }
 
-    int x, y;
-    bool visited = false, up, left;
+  int X, Y;
+  bool Visited = false;
+  pair<bool, bool> Walls;
 };
 
-bool checkNeighbours(Cell* current, vector<Cell*>& neighbours, vector<vector<Cell*>> cellList, int rows, int cols)
-{ 
-    int currentNeighbours = neighbours.size();
+bool CheckForNeighbors(Node* CurrentNode, vector<Node*>& NeighborList, const vector<vector<Node*>>& NodeList, int Rows, int Columns);
 
-    //Up
-    if (current->y - 1 >= 0)
+int main()
+{
+  int Columns, Rows, Seed;
+  const int RandomLength = 100;
+  int Random[RandomLength] = {72, 99, 56, 34, 43, 62, 31, 4, 70, 22, 6, 65, 96, 71, 29, 9, 98, 41, 90, 7, 30, 3, 97, 49, 63, 88, 47, 82, 91, 54, 74, 2, 86, 14, 58, 35, 89, 11, 10, 60, 28, 21, 52, 50, 55, 69, 76, 94, 23, 66, 15, 57, 44, 18, 67, 5, 24, 33, 77, 53, 51, 59, 20, 42, 80, 61, 1, 0, 38, 64, 45, 92, 46, 79, 93, 95, 37, 40, 83, 13, 12, 78, 75, 73, 84, 81, 8, 32, 27, 19, 87, 85, 16, 25, 17, 68, 26, 39, 48, 36};
+
+  //Fill Nodes
+  cin >> Columns >> Rows >> Seed;
+  vector<vector<Node*>> NodeList( Rows , vector<Node*> (Columns));
+  for (int i = 0; i < Rows; ++i)
+  {
+    for (int j = 0; j < Columns; ++j)
     {
-        if (!cellList[current->y - 1][current->x]->visited)
-        {
-            neighbours.push_back(cellList[current->y - 1][current->x]);
-        }
+      Node* ToCreate = new Node(j , i);
+      NodeList[i][j] = ToCreate;
     }
+  }
 
-    // Right
-    if (current->x + 1 < cols) 
+  //Depth First Search
+  stack<Node*> Stack;
+  Stack.push(NodeList[0][0]);
+  while(!Stack.empty())
+  {
+    Node* CurrentNode = Stack.top();
+    CurrentNode->Visited = true;
+
+    vector<Node*> NeighborList;
+    if(CheckForNeighbors(CurrentNode, NeighborList, NodeList, Rows, Columns))
     {
-        if (!cellList[current->y][current->x + 1]->visited) 
-        {
-            neighbours.push_back(cellList[current->y][current->x + 1]);
-        }
+      int NumOfNeighbors = int(NeighborList.size());
+      Node* TargetNode = nullptr;
+      if(NumOfNeighbors == 1)
+      {
+        TargetNode = NeighborList.front();
+      }
+      else
+      {
+        int TargetIndex = Random[Seed] % NumOfNeighbors;
+        Seed++;
+        if(Seed >= RandomLength)
+          Seed = 0;
+
+        TargetNode = NeighborList[TargetIndex];
+      }
+
+      if(TargetNode->Y < CurrentNode->Y) CurrentNode->Walls.second = false;
+      else if(TargetNode->X > CurrentNode->X) TargetNode->Walls.first = false;
+      else if(TargetNode->Y > CurrentNode->Y) TargetNode->Walls.second = false;
+      else if(TargetNode->X < CurrentNode->X) CurrentNode->Walls.first = false;
+
+      Stack.push(TargetNode);
     }
-
-    //Down
-    if (current->y + 1 < rows) 
+    else
     {
-        if (!cellList[current->y + 1][current->x]->visited) 
-        {
-            neighbours.push_back(cellList[current->y + 1][current->x]);
-        }
+      Stack.pop();
     }
+  }
 
-    //Left
-    if (current->x - 1 >= 0) 
+  //Build The Maze Top
+  for (int i = 0; i < Columns; ++i)
+  {
+    if(NodeList[0][i]->Walls.second)
+      cout << " " << "_";
+  }
+
+  cout << "  " << "\n";
+
+  //Build Maze Core
+  for(int i = 0; i < Rows; ++i)
+  {
+    for(int j = 0; j < Columns; ++j)
     {
-        if (!cellList[current->y][current->x - 1]->visited) 
+      if(NodeList[i][j]->Walls.first)
+      {
+        cout << "|";
+      }
+      else
+      {
+        cout << " ";
+      }
+
+      if(i+1 < Rows)
+      {
+        if(NodeList[i+1][j]->Walls.second)
         {
-            neighbours.push_back(cellList[current->y][current->x - 1]);
-        }
-    }    
-
-    return neighbours.size() > currentNeighbours;
-}
-
-int main() 
-{ 
-    int cols, rows, seed;
-    const int randLength = 100;
-    int rand[randLength] = 
-    {72, 99, 56, 34, 43, 62, 31, 4,  70, 22, 6,  65, 96, 71, 29, 9,  98, 41, 90, 7,
-     30, 3,  97, 49, 63, 88, 47, 82, 91, 54, 74, 2,  86, 14, 58, 35, 89, 11, 10, 60,
-     28, 21, 52, 50, 55, 69, 76, 94, 23, 66, 15, 57, 44, 18, 67, 5,  24, 33, 77, 53,
-     51, 59, 20, 42, 80, 61, 1,  0,  38, 64, 45, 92, 46, 79, 93, 95, 37, 40, 83, 13,
-     12, 78, 75, 73, 84, 81, 8,  32, 27, 19, 87, 85, 16, 25, 17, 68, 26, 39, 48, 36};
-
-    cin >> cols >> rows >> seed;
-
-    //Fill the list with cells
-    vector<vector<Cell*>> cellList(rows, vector<Cell*>(cols));
-    for (size_t i = 0; i < rows; i++) 
-    {
-        for (size_t j = 0; j < cols; j++) 
-        {
-            cellList[i][j] = new Cell(j, i);
-        }
-    }
-
-    //Search
-    stack<Cell*> stack;
-    stack.push(cellList[0][0]);
-    while (!stack.empty())
-    {
-        stack.top()->visited = true;
-
-        //List of Neighbours
-        vector<Cell*> neighbours;
-
-        if (checkNeighbours(stack.top(), neighbours, cellList, rows, cols))
-        {
-            Cell* target = nullptr;
-            if (neighbours.size() == 1)
-            {
-                target = neighbours.front();
-            }
-            else
-            {
-                target = neighbours[rand[seed] % neighbours.size()];
-                seed++;
-                if (seed >= randLength) 
-                {
-                    seed = 0;
-                }
-            }
-
-            if (target->y < stack.top()->y) 
-            {
-                stack.top()->up = false;
-            } 
-            else if (target->y > stack.top()->y) 
-            {
-                target->up = false;
-            }
-            else if (target->x < stack.top()->x) 
-            {
-                stack.top()->left = false;
-            } 
-            else if (target->x > stack.top()->x) 
-            {
-                target->left = false;
-            }
-
-            stack.push(target);
+          cout << "_";
         }
         else
         {
-            stack.pop();
+          cout << " ";
         }
+      }
+      else
+      {
+        cout << "_";
+      }
     }
 
-    //Building the Maze
-    for (size_t i = 0; i < cols; i++) 
+    cout << "| " << endl;
+  }
+
+  //Clean Up
+  for (int i = 0; i < Rows; ++i)
+  {
+    for (int j = 0; j < Columns; ++j)
     {
-        // Maze Top
-        if (cellList[0][i]->up) {
-            cout << " " << "_";
-        }
+      delete NodeList[i][j];
     }
-    
-    cout << "  " << endl;
-
-    for (size_t i = 0; i < rows; i++) 
-    {
-        for (size_t j = 0; j < cols; j++) 
-        {
-            //Rest of Maze
-            if (cellList[i][j]->left)
-            {
-                cout << "|";
-            }
-            else
-            {
-                cout << " ";
-            }
-
-            if (i + 1 < rows)
-            {
-                if (cellList[i + 1][j]->up)
-                {
-                    cout << "_";
-                }
-                else
-                {
-                    cout << " ";
-                }
-            }
-            else
-            {
-                cout << "_";
-            }
-        }
-        
-        //Last Wall
-        cout << "| " << endl;
-    }
-
-    //Clean Up
-    for (size_t i = 0; i < rows; i++) 
-    {
-        for (size_t j = 0; j < cols; j++) 
-        {
-            delete cellList[i][j];
-        }
-    }
+  }
 }
+
+//Check the adjacent neighbors
+bool CheckForNeighbors(Node* CurrentNode, vector<Node*>& NeighborList, const vector<vector<Node*>>& NodeList, int MaxRows, int MaxColumns)
+{
+  int checks = 0;
+
+  //Test Up
+  if(CurrentNode->Y - 1 >= 0)
+  {
+    Node* TopNode = NodeList[CurrentNode->Y - 1][CurrentNode->X];
+    if(!TopNode->Visited)
+    {
+      NeighborList.push_back(TopNode);
+      checks++;
+    }
+  }
+
+  //Test Right
+  if(CurrentNode->X + 1 < MaxColumns)
+  {
+    Node* RightNode = NodeList[CurrentNode->Y][CurrentNode->X + 1];
+    if(!RightNode->Visited)
+    {
+      NeighborList.push_back(RightNode);
+      checks++;
+    }
+  }
+
+  //Test Down
+  if(CurrentNode->Y + 1 < MaxRows)
+  {
+    Node* BottomNode = NodeList[CurrentNode->Y + 1][CurrentNode->X];
+    if(!BottomNode->Visited)
+    {
+      NeighborList.push_back(BottomNode);
+      checks++;
+    }
+  }
+
+  //Test Left
+  if(CurrentNode->X - 1 >= 0)
+  {
+    Node* LeftNode = NodeList[CurrentNode->Y][CurrentNode->X - 1];
+    if(!LeftNode->Visited)
+    {
+      NeighborList.push_back(LeftNode);
+      checks++;
+    }
+  }
+
+  if(checks == 0) return false;
+
+  return true;
+}
+
+
